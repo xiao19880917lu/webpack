@@ -158,6 +158,7 @@ class NormalModuleFactory extends Tapable {
 				});
 			});
 		});
+		/** luyongfang 需要看下解析resolver时做了哪些工作 */
 		this.hooks.resolver.tap("NormalModuleFactory", () => (data, callback) => {
 			const contextInfo = data.contextInfo;
 			const context = data.context;
@@ -394,6 +395,9 @@ class NormalModuleFactory extends Tapable {
 				// Ignored
 				if (!result) return callback();
 				/** luyongfang 调用绑定到factory上的钩子 */
+				/**
+				 * 0. 
+				*/
 				const factory = this.hooks.factory.call(null);
 
 				// Ignored

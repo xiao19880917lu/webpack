@@ -618,6 +618,7 @@ class Compilation extends Tapable {
 	 * had an issuer, or any dependnecies
 	 */
 	addModule(module, cacheGroup) {
+		// luyongfang identifier = request
 		const identifier = module.identifier();
 		const alreadyAddedModule = this._modules.get(identifier);
 		if (alreadyAddedModule) {
@@ -664,6 +665,12 @@ class Compilation extends Tapable {
 			cacheModule.unbuild();
 			module = cacheModule;
 		}
+		/** luyongfang */
+		/**
+		 * 0. this._modules中存放了以request为key的module
+		 * 1. 如果已经加入过this._modules中代表该模块已经添加过，否则是全新的module还未被加入
+		 * 2. issuer
+		*/
 		this._modules.set(identifier, module);
 		if (this.cache) {
 			this.cache[cacheName] = module;
@@ -800,7 +807,7 @@ class Compilation extends Tapable {
 	 */
 	processModuleDependencies(module, callback) {
 		const dependencies = new Map();
-
+		/** luyongfang 不懂这里的module.dependencies 不是个boolea值么，为什么这里会是数组呢*/
 		const addDependency = dep => {
 			const resourceIdent = dep.getResourceIdentifier();
 			if (resourceIdent) {
@@ -903,7 +910,7 @@ class Compilation extends Tapable {
 				const semaphore = this.semaphore;
 				semaphore.acquire(() => {
 					const factory = item.factory;
-					/** luyongfang  这里调用NormalModuleFactory.crete 方法*/
+					/** luyongfang  这里调用NormalModuleFactory.crete 方法，factory指向NormalModuleFactory实例*/
 					/**
 					 * 1. NormalModuleFactory.crete方法中调用beforeResolver
 					 * 2. 在回调函数中 会调用注册过 this.factory.hooks的事件，其中里面会调用3. 4
@@ -1069,6 +1076,16 @@ class Compilation extends Tapable {
 			throw new Error("Parameter 'dependency' must be a Dependency");
 		}
 		const Dep = /** @type {DepConstructor} */ (dependency.constructor);
+		// luyongfang 因为在这之前 SingleEntryPlugin 已经加入到dependencyFactories中了
+		/**
+		 * 0. dependency 是SingleEntryDependency的一个实例
+		 * 1. 而dependencyFactories中的key是类
+		 * 2. 所以这里get(里面是指向实例的constructor)
+		 * 3. moduleFactory 指向了 normalModuleFactory 实例
+		 * 4. moduleFactory.create 中会调用factory注册的钩子
+		 * 5. 而factory的钩子中会 调用resolver等解析loader, module路径，并创建实例化normalModule
+		 * 6. normalModule则是真正的对应到每一个资源的全部信息,type,request,userRequest,rawRequest,loaders,resource,matchResource,
+		*/
 		const moduleFactory = this.dependencyFactories.get(Dep);
 		if (!moduleFactory) {
 			throw new Error(
@@ -1101,7 +1118,7 @@ class Compilation extends Tapable {
 
 					const addModuleResult = this.addModule(module);
 					module = addModuleResult.module;
-
+					// luyongfang  this.entries.push(module);
 					onModule(module);
 
 					dependency.module = module;
@@ -1123,7 +1140,12 @@ class Compilation extends Tapable {
 							module.profile = currentProfile;
 						}
 					}
-
+					/** luyongfang */
+					/**
+					 * 0. 模块没build则buildModule, buildModuel之后检测是否有依赖，如果有以来，处理以来
+					 * 1. 模块加入过带处理的队列，则等待当前模块执行完之后，再检测是否有依赖，如有则继续处理
+					 * 2. 怎样判断的是否有依赖呢: addModuleResult.dependencies, addModule函数中判断-build过的就是false, 没build过的或者是cache中的则是true
+					*/
 					if (addModuleResult.build) {
 						this.buildModule(module, false, null, null, err => {
 							if (err) {
@@ -1158,7 +1180,15 @@ class Compilation extends Tapable {
 	 */
 	addEntry(context, entry, name, callback) {
 		this.hooks.addEntry.call(entry, name);
-
+		/** luyongfang */
+		/**
+		 * 0. 这里的entry 是根据entry生成的dep
+		 * 1. addEntry:
+		 * 2. _addModuleChain
+		 * 3. afterBuild-processModuleDependencies
+		 * 4. addModuleDependencies
+		 * 5. factory.create 调用到实际的normalModuleFactory-然后是模块的factory, resolver等模块相关的处理
+		*/
 		const slot = {
 			name: name,
 			// TODO webpack 5 remove `request`
@@ -1178,6 +1208,10 @@ class Compilation extends Tapable {
 		} else {
 			this._preparedEntrypoints.push(slot);
 		}
+		/** luyongfang _preparedEntrypoints 里面存储了compilation实例中 加入的entry资源  */
+		/**
+		 * 0. _preparedEntrypoints [{name: 'entryname', request: 'ssssss', 'module': ''}]
+		*/
 		this._addModuleChain(
 			context,
 			entry,

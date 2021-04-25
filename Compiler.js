@@ -667,6 +667,7 @@ class Compiler extends Tapable {
 			/** luyongfang this.hooks.compilation.tap的回调函数参数params 中包含了normalModuleFactory,  contextModuleFactory,compilationDependencies */
 			/**
 			 * 1. 当启动一次编译的时候, 需要初始化模块的一些信息,如normalModuleFactory-普通模块, 
+			 * 2. (compilation, 初始化的参数)会作为注册过compilation钩子的回调函数的参数 
 			*/
 			const compilation = this.newCompilation(params);
 
